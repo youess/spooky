@@ -33,16 +33,22 @@ def create_nn(arch='lstm_cnn', default_input_size=(300, 1)):
 
     if arch == 'lstm_cnn':
 
-        max_features = 20000
-        embedding_size = 128
+        # max_features = 20000
+        # embedding_size = 128
         inputs = Input(shape=default_input_size)
-        x = Embedding(max_features, embedding_size)(inputs)
-        x = Dropout(.25)(x)
-        x = Conv1D(filters=128, kernel_size=(2, 2), strides=2, padding='valid', activation='relu')(x)
-        x = MaxPool1D(pool_size=2)(x)
+        # x = Embedding(max_features, embedding_size)(inputs)
+        # x = Dropout(.25)(x)
+        # x = Conv1D(filters=128, kernel_size=3, strides=2, padding='valid', activation='relu')(x)
+        x = Conv1D(filters=1280, kernel_size=3, strides=2, padding='valid', activation='relu')(inputs)
+        x = MaxPool1D(pool_size=3)(x)
+        x = Dropout(.2)(x)
+        x = Conv1D(filters=128, kernel_size=3, padding='valid', activation='relu')(x)
+        x = MaxPool1D(pool_size=3)(x)
+        x = Dropout(.2)(x)
         x = Bidirectional(LSTM(64, return_sequences=True), merge_mode='concat')(x)
         x = Dropout(.25)(x)
         x = Flatten()(x)
+        # x = Dense(100, activation='relu')(x)
         outputs = Dense(3, activation='softmax')(x)
 
         m = Model(inputs=inputs, outputs=outputs, name="LSTM-CNN")

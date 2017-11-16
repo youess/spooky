@@ -17,13 +17,13 @@ train_x = clean_text(train['text'], nlp)
 test_x = clean_text(test['text'], nlp)
 
 train_y = pd.get_dummies(train['author']).values
-test_y = pd.get_dummies(test['author']).values
+# test_y = pd.get_dummies(test['author']).values
 
 lstm = create_nn()
 
-lstm.summary()
+print(lstm.summary())
 
-if lstm.name == 'lstm-cnn':
+if lstm.name.lower() == 'lstm-cnn':
     train_x = np.expand_dims(train_x, axis=2)
     test_x = np.expand_dims(test_x, axis=2)
 
@@ -34,10 +34,10 @@ batch_size = 128
 
 timestamp = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 model_file = 'data/checkpoints/{}_lstm_cnn_checkpoint.hdf5'.format(timestamp)
-es = EarlyStopping(monitor='val_loss', patience=10)
+es = EarlyStopping(monitor='val_loss', patience=20)
 cp = ModelCheckpoint(model_file, monitor='val_loss', verbose=0, save_best_only=True)
 
-history = lstm.fit(train_x, train_y, validation_split=.2,
+history = lstm.fit(train_x, train_y, validation_split=.3,
                    epochs=epochs, batch_size=batch_size,
                    callbacks=[es, cp], verbose=1)
 
@@ -51,4 +51,4 @@ test_y_pred = history.model.predict(test_x)
 test_y_pred = pd.DataFrame(test_y_pred).clip(0.005, 0.995)
 sub = pd.concat([test['id'], test_y_pred], axis=1)
 sub.columns = ["id", "EAP", "HPL", "MWS"]
-sub.to_csv('data/subs/submission_baseline_{}.csv'.format(timestamp), index=False)
+sub.to_csv('data/sub/submission_baseline_{}.csv'.format(timestamp), index=False)
