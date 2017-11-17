@@ -232,7 +232,7 @@ results = read_csv('sample_submission.csv')
 for i in range(y.shape[1]):
     results.iloc[:, i + 1] = np.clip(y[:, i])
 
-# bad results
+# bad results, lb 1.7
 results.to_csv('data/sub/20171117-17-43-keras_kernel.csv', index=False)
 
 # 执行错误，混在一起好像不行，word embeddings这个还不清楚
@@ -303,5 +303,5 @@ results = read_csv('sample_submission.csv')
 for i in range(y.shape[1]):
     results.iloc[:, i + 1] = np.clip(y[:, i], 0.005, 0.995)
 
-# good results
+# good results, lb 0.35
 results.to_csv('data/sub/20171117-17-43-keras_kernel_v2.csv', index=False)
