@@ -16,6 +16,13 @@ def read_csv(filename, loc='./data'):
     return pd.read_csv(filename)
 
 
+def write_sub(y_predict, filename, loc='./data/sub'):
+    filename = os.path.join(loc, filename)
+    sub = read_csv('sample_submission.csv')
+    sub.iloc[:, 1:] = y_predict
+    sub.to_csv(filename, index=False, float_format='%.4f')
+
+
 def clean_text(docs, nlp):
 
     texts = []
