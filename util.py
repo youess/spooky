@@ -23,6 +23,12 @@ def write_sub(y_predict, filename, loc='./data/sub'):
     sub.to_csv(filename, index=False, float_format='%.4f')
 
 
+def read_data():
+    train = read_csv('train.csv')
+    test = read_csv('test.csv')
+    return train['text'], train['author'], test['text']
+
+
 def clean_text(docs, nlp):
 
     texts = []
