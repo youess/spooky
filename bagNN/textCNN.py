@@ -11,11 +11,13 @@ Text Vector -> Embedding -> conv(3) -> BN -> RELU -> conv(3) -> BN -> RELU -> Ma
 """
 
 import numpy as np
-from keras.layers import Conv1D, BatchNormalization, Activation, MaxPool1D, Add, Embedding, Dense
+from keras.layers import Conv1D, BatchNormalization, Activation, \
+    MaxPool1D, Add, Embedding, Dense, Flatten, Dropout, AveragePooling1D
 from keras.models import Model, Input
 from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint, EarlyStopping
-from .utils import add_timestamp, write_sub
+from keras import regularizers
+from utils import add_timestamp, write_sub
 
 
 class TextCNN(object):
@@ -31,10 +33,10 @@ class TextCNN(object):
         self.x_val = val_x
         self.y_val = val_y
         self.x_test = test_x
-        self.embed_size = kwargs.get('embed_size', 20)
-        self.batch_size = kwargs.get('batch_size', 32)
-        self.epochs_num = kwargs.get('epochs', 5)
-        self.input_max_size = np.max(train_x) + 1
+        self.embed_size = kwargs.get('embed_size', 30)
+        self.batch_size = kwargs.get('batch_size', 64)
+        self.epochs_num = kwargs.get('epochs', 80)
+        self.input_max_size = max(np.max(train_x), np.max(val_x), np.max(test_x)) + 1
         self.lr = kwargs.get('lr', 0.001)
         self.patience_num = kwargs.get('patience_num', 5)
         self.model_file = add_timestamp('_text_cnn.h5')
@@ -42,34 +44,42 @@ class TextCNN(object):
         self.model = None
 
     @classmethod
-    def conv1_max_pooling_layer(cls, embed_x, filters=40, kernel_size=1, padding='same'):
+    def conv1_max_pooling_layer(cls, embed_x, filters=40, kernel_size=1, l2_alpha=0, padding='same'):
 
-        x = Conv1D(filters=filters, kernel_size=kernel_size, padding=padding)(embed_x)
+        x = Conv1D(filters=filters, kernel_size=kernel_size, padding=padding,
+                   kernel_regularizer=regularizers.l2(l2_alpha))(embed_x)
+        # x = Dropout(.3)(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
         x = BatchNormalization()(x)
-        x = MaxPool1D()(x)
+        # x = MaxPool1D()(x)
+        x = AveragePooling1D()(x)
         return x
 
-    def train(self, input_shape):
+    def train(self):
 
-        input = Input(shape=input_shape)
-        ex = Embedding(input_dim=self.input_max_size, output_dim=100)(input)
-        x1 = self.conv1_max_pooling_layer(ex, filters=40, kernel_size=1)
-        x2 = self.conv1_max_pooling_layer(ex, filters=40, kernel_size=2)
-        x3 = self.conv1_max_pooling_layer(ex, filters=40, kernel_size=3)
-        x4 = self.conv1_max_pooling_layer(ex, filters=40, kernel_size=4)
-        x5 = self.conv1_max_pooling_layer(ex, filters=40, kernel_size=5)
+        inputs = Input(shape=(self.x.shape[1], ))
+        ex = Embedding(input_dim=self.input_max_size, output_dim=100)(inputs)
+        ex = Dropout(.2)(ex)
+        x1 = self.conv1_max_pooling_layer(ex, filters=50, kernel_size=1)
+        x2 = self.conv1_max_pooling_layer(ex, filters=50, kernel_size=2)
+        x3 = self.conv1_max_pooling_layer(ex, filters=50, kernel_size=3)
+        x4 = self.conv1_max_pooling_layer(ex, filters=50, kernel_size=4)
+        x5 = self.conv1_max_pooling_layer(ex, filters=50, kernel_size=5)
 
-        x = Add()[x1, x2, x3, x4, x5]
-        output = Dense(100, activation='softmax')
-        self.model = Model(inputs=input, outputs=output, name='text-cnn')
+        x = Add()([x1, x2, x3, x4, x5])
+        x = Flatten()(x)
+        x = Dropout(.5)(x)
+        # x = Dense(100, activation='relu')(x)
+        outputs = Dense(3, activation='softmax')(x)
+
+        self.model = Model(inputs=inputs, outputs=outputs, name='text-cnn')
         self.model.compile(optimizer=Adam(self.lr), loss='categorical_crossentropy', metrics=['accuracy'])
         self.model.summary()
 
         # callbacks
         es = EarlyStopping(monitor='val_loss', patience=self.patience_num)
-        cp = ModelCheckpoint(self.model_file, monitor='val_loss', save_best_only=True)
+        cp = ModelCheckpoint('model/' + self.model_file, monitor='val_loss', save_best_only=True)
         self.model.fit(
             self.x, self.y,
             batch_size=self.batch_size,
@@ -81,10 +91,15 @@ class TextCNN(object):
 
     def predict(self, x):
 
-        return self.model.predict_proba(x)
+        return self.model.predict(x)
 
     def write_sub(self):
 
         if self.model is not None:
             y_test = self.predict(self.x_test)
-            write_sub(y_test, filename=self.sub_file, loc='../data/sub')
+            write_sub(y_test, filename=self.sub_file)
+
+    def run(self):
+        # loss: 0.1103 - acc: 0.9627 - val_loss: 1.4722 - val_acc: 0.7215
+        self.train()
+        self.write_sub()

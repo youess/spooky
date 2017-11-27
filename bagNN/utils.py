@@ -6,7 +6,7 @@ from datetime import datetime
 
 
 def add_timestamp(text):
-    tsp = datetime.timestamp()
+    tsp = datetime.now()
     return tsp.strftime('%Y-%m-%d_%H') + "_" + text
 
 
@@ -21,8 +21,8 @@ def read_data(loc='./data'):
     return train['text'], train['author'], test['text']
 
 
-def write_sub(y_predict, filename, loc='./data/sub'):
+def write_sub(y_predict, filename, loc='./sub'):
     filename = os.path.join(loc, filename)
-    sub = read_csv('sample_submission.csv')
+    sub = read_csv('sample_submission.csv', loc=loc)
     sub.iloc[:, 1:] = y_predict
     sub.to_csv(filename, index=False, float_format='%.4f')
