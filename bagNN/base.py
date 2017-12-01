@@ -25,6 +25,7 @@ class BaseModel(object):
         self.epochs_num = kwargs.get('epochs_num', 15)
         self.batch_size = kwargs.get('batch_size', 16)
         self.lr = kwargs.get('learning_rate', 0.001)
+        self.decay_rate = kwargs.get('decay', 0.0)
         self.patience_num = kwargs.get('patience_num', 5)
         self.dropout_ratio = 0
 
