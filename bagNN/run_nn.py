@@ -6,6 +6,9 @@ from sklearn.model_selection import train_test_split
 from utils import read_data
 from textVectorPrecessoring import make_word_vector
 from textCNN import TextCNN
+from fastText import FastText
+from textRNN import TextRNN
+from textRCNN import TextRCNN
 
 
 data_x, data_y, test_x = read_data(loc='../data')
@@ -26,9 +29,14 @@ test_x = docs[~is_train]
 
 # data_x = np.expand_dims(data_x, axis=2)
 
-train_x, val_x, train_y, val_y = train_test_split(data_x, data_y, test_size=.15, random_state=333)
+train_x, val_x, train_y, val_y = train_test_split(data_x, data_y, test_size=.1, random_state=333)
 
 print(train_x.shape, val_x.shape, train_y.shape, val_y.shape)
 
-nn = TextCNN(train_x, train_y, val_x, val_y, test_x)
+# nn = TextCNN(train_x, train_y, val_x, val_y, test_x)                          # bad
+# nn = FastText(train_x, train_y, val_x, val_y, test_x, epochs_num=80)          # good
+# nn = TextRNN(train_x, train_y, val_x, val_y, test_x,
+#              epochs_num=80, batch_size=32)                                    # really bad
+
+nn = TextRCNN(train_x, train_y, val_x, val_y, test_x, epochs_num=80, batch_size=32)
 nn.run()
